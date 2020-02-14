@@ -16,13 +16,13 @@ right_side = None
 # tolerance for how close symettric is
 tolerance = None # Not sure what to set
 
-veloicty = None
+velocity = None
 turn_val = None
 
 def get_laser_val(laser_cmd):
     # this is for sure wrong
-    left_side = ranges[0]
-    right_side = ranges[-1]
+    left_side = laser_cmd.ranges[360]
+    right_side = laser_cmd.ranges[720]
 
 def random_turn(self):
 	rand_degree = randint(-15,15)
@@ -32,6 +32,7 @@ def send_command(timer_event):
     w2g_cmd = Twist()
     w2g_cmd.linear = velocity
     w2g_cmd.angular = turn_val
+    command_pub.publish(w2g_cmd)
 
 def main():
     rospy.init_node('planning_node', anonymous=True)
