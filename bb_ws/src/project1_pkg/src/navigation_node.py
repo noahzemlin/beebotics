@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
 import rospy
-import geometry_msgs, kobuki_msgs
 from std_msgs.msg import String
+from geometry_msgs.msg import Twist, Vector3
+from kobuki_msgs.msg import BumperEvent
+
 
 # set up the publisher
 command_pub = None
 # keep track of the most recent keyboard command (Twist)
-key_cmd = None
+key_cmd = Twist()
 # keep track of most recent bumper state (bool)
 bumped = False
 # keep track of most recent planned command (Twist)
-plan_cmd = None
+plan_cmd = Twist()
 
 def get_key_cmd(key_msg):
     global key_cmd
@@ -21,25 +23,29 @@ def get_bumper_state(bumper_state):
     global bumped
     bumped = bumper_state
 
-def get_planned_cmd(planned_cmd)
+def get_planned_cmd(planned_cmd):
     global plan_cmd
     plan_cmd = planned_cmd
+
+def is_zero_twist(twisty):
+    return (twisty.linear.x == twisty.linear.y == twisty.linear.z == twisty.angular.x == twisty.angular.y == twisty.angular.z == 0)
 
 def send_command(timer_event):
     if bumped:
         # bumper has been triggered, so halt
         halt_cmd = Twist()
-        halt_cmd.linear = 0
-        halt_cmd.angular = 0
+        halt_cmd.linear = Vector3(0,0,0)
+        halt_cmd.angular = Vector3(0,0,0)
         command_pub.publish(halt_cmd)
-    if key_cmd = 0:
+    if is_zero_twist(key_cmd):
         # there is no keyboard command being received
-        command_pub.publish(planned_cmd)
+        command_pub.publish(plan_cmd)
     else:
         # keyboard command is being received and should be passed through
         command_pub.publish(key_cmd)
 
 def main():
+    global command_pub
     rospy.init_node('navigation_node', anonymous=True)
 
     # set up publisher
@@ -47,11 +53,11 @@ def main():
 
     # set up subscribers
     # let keyboard input take over
-    keyboard_sub = rospy.Subscriber("/turtlebot_teleop_keyboard", Twist, get_key_cmd, queue_size=1)
+    keyboard_sub = rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
     # halt if bumper trigger
-    bumper_sub = rospy.Subscriber("/mobilebase/events/bumper", BumperEvent, get_bumper_state, queue_size=1)
+    bumper_sub = rospy.Subscriber("/mobilebase/events/bumper", BumperEvent, get_bumper_state)
     # do event from planning
-    planning_sub = rospy.Subscriber("/bb/where2go", Twist, get_planned_cmd, queue_size=1)
+    planning_sub = rospy.Subscriber("/bb/where2go", Twist, get_planned_cmd)
 
     # Set up a timer to update robot's drive state at 10 Hz
     update_timer = rospy.Timer(rospy.Duration(secs=0.1), send_command)
