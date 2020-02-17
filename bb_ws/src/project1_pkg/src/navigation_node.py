@@ -9,6 +9,8 @@ from kobuki_msgs.msg import BumperEvent
 
 # set up the publisher
 command_pub = None
+# global time
+start_time = time.time()
 # keep track of the most recent keyboard command (Twist)
 key_cmd = Twist()
 # keep track of most recent bumper state (bool)
@@ -52,6 +54,9 @@ def send_command(timer_event):
 
 def main():
     global command_pub
+    # use time to maintain commands when sensor vals change (e.g., for escape)
+    start_time = time.time()
+
     # initialize node
     rospy.init_node('navigation_node', anonymous=True)
 
