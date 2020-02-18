@@ -25,7 +25,7 @@ tolerance = 0.05 # meters
 escape_dist = 0.3048 # 1 ft in meters
 
 # max differnece in headings to consider same heading (degrees)
-angle_diff_threshold = 0.5
+angle_diff_threshold = 1
 
 # make range in which to escape
 escape_range = (escape_dist - tolerance, escape_dist + tolerance)
@@ -83,9 +83,9 @@ def get_angle_diff(angle1, angle2):
 def send_command(timer_event):
     global target_heading, from_position
 
-    p_error = (get_current_heading() - target_heading) * -0.07
-    if abs(p_error) > 0.1:
-        p_error = math.copysign(0.1, p_error)
+    p_error = get_angle_diff(get_current_heading(), target_heading) * -0.07
+    if abs(p_error) > 1.25:
+        p_error = math.copysign(1.25, p_error)
     turn_val = Vector3(0,0,p_error) # shitty p controller
     velocity = Vector3(0,0,0)
 
@@ -96,7 +96,6 @@ def send_command(timer_event):
 
     if abs(get_angle_diff(get_current_heading(), target_heading)) > angle_diff_threshold:
         publish_w2g_cmd(velocity, turn_val)
-        from_position = odom.pose.pose.position
         return
 
     # create some useful boolean values
@@ -114,20 +113,20 @@ def send_command(timer_event):
     elif left_in_range:
         #print("left too close")
         # only left sensor sees obstacle, so avoid by turning right (reflex)
-        target_heading = (get_current_heading() + 30) % 360
+        target_heading = (get_current_heading() - 20) % 360
     elif right_in_range:
         #print("right too close")
         # only right sensor sees obstacle, so avoid by turning left (reflex)
-        target_heading = (get_current_heading() - 30) % 360
+        target_heading = (get_current_heading() + 20) % 360
     else: 
         # no obstacles within range, so drive forward 1ft
-        velocity = Vector3(0.3,0,0)
+        velocity = Vector3(0.35,0,0)
 
         cur_pos = odom.pose.pose.position
         distance = (cur_pos.x - from_position.x)**2 + (cur_pos.y - from_position.y)**2
 
         if distance >= escape_dist**2:
-            velocity = Vector3(0,0,0)
+            from_position = odom.pose.pose.position
             target_heading = (get_current_heading() + random.randint(-15, 15)) % 360
 
     publish_w2g_cmd(velocity, turn_val)
@@ -143,7 +142,7 @@ def main():
     # publish drive command
     command_pub = rospy.Publisher("/bb/where2go", Twist, queue_size=1)
     # Set up a timer to update robot's drive state at 10 Hz
-    update_timer = rospy.Timer(rospy.Duration(secs=0.1), send_command)
+    update_timer = rospy.Timer(rospy.Duration(secs=0.05), send_command)
     # cycle through callbacks
     rospy.spin()
 
