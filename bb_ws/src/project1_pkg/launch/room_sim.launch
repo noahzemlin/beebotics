@@ -1,6 +1,8 @@
+<!-- File largely sourced from  https://github.com/jkleiber/intro_robotics_ws/blob/project1/src/reactive_robot/launch/reactive_robot_room.launch-->
+
 <launch>
-    <node pkg="project1_pkg" type="navigation_node.py" name="navigation_node" output="screen"/>
-    <node pkg="project1_pkg" type="planning_node.py" name="planning_node" output="screen"/>
+    <node pkg="project1_pkg" type="command_node.py" name="command_node" output="screen"/>
+    <node pkg="project1_pkg" type="reactive_node.py" name="reactive_node" output="screen"/>
 
     <!-- Prepare the room world -->
     <arg name="world_file"  default="$(find project1_pkg)/worlds/room_world.world"/>
@@ -45,4 +47,7 @@
     <!-- Keyboard control -->
     <remap from="cmd_vel_mux/input/teleop" to="/bb/keyboard_input"/>
     <include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch"/>
+
+    <!-- SLAM mapping -->
+    <include file="$(find turtlebot_navigation)/launch/includes/gmapping/$(arg 3d_sensor)_gmapping.launch.xml"/>
 </launch>
