@@ -1,20 +1,22 @@
 <!-- File largely sourced from  https://github.com/jkleiber/intro_robotics_ws/blob/project1/src/reactive_robot/launch/reactive_robot_room.launch-->
 
 <launch>
+    <!-- Launch our nodes that control the robot. -->
     <node pkg="project1_pkg" type="command_node.py" name="command_node" output="screen"/>
     <node pkg="project1_pkg" type="reactive_node.py" name="reactive_node" output="screen"/>
 
-    <!-- Prepare the room world -->
+    <!--
+        Define arguments for simulation. The most important is the world_file
+        argument which we use to define our world_file when launching gazebo.
+    -->
     <arg name="world_file"  default="$(find project1_pkg)/worlds/room_world.world"/>
-
-    <!-- Prepare the turtlebot -->
     <arg name="base"      value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
     <arg name="battery"   value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 --> 
     <arg name="gui" default="true"/>
     <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
     <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro --> 
 
-    <!-- Launch gazebo with the room world -->
+    <!-- Launch gazebo with the world_file we declared earlier. -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="use_sim_time" value="true"/>
         <arg name="debug" value="false"/>
@@ -22,18 +24,17 @@
         <arg name="world_name" value="$(arg world_file)"/>
     </include>
 
-    <!-- Launch the turtlebot -->
+    <!-- Launch turtlebot. -->
     <include file="$(find turtlebot_gazebo)/launch/includes/$(arg base).launch.xml">
         <arg name="base" value="$(arg base)"/>
         <arg name="stacks" value="$(arg stacks)"/>
         <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
     </include>
-
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-        <param name="publish_frequency" type="double" value="30.0" />
-    </node>
   
-    <!-- Fake laser -->
+    <!--
+        Create a LaserScan from the DepthImage we get from the Kinect.
+        Point it to the /scan topic.
+    -->
     <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
     <node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
             args="load depthimage_to_laserscan/DepthImageToLaserScanNodelet laserscan_nodelet_manager">
@@ -44,10 +45,15 @@
         <remap from="scan" to="/scan"/>
     </node>
 
-    <!-- Keyboard control -->
-    <remap from="cmd_vel_mux/input/teleop" to="/bb/keyboard_input"/>
-    <include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch"/>
+    <!--     
+        Launch the keyboard control node. Leave uncommented when
+        debugging as it messes up the screen output.
+    -->
+    <!-- <include file="$(find project1_pkg)/launch/bb_teleop.launch"/> -->
 
-    <!-- SLAM mapping -->
+    <!-- 
+        Launch the gmapping SLAM launch file. This handles creating
+        a map of the environment.
+     -->
     <include file="$(find turtlebot_navigation)/launch/includes/gmapping/$(arg 3d_sensor)_gmapping.launch.xml"/>
 </launch>

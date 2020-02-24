@@ -1,0 +1,11 @@
+<launch>
+    <!--
+        Remap the teleop topic from the default to /bb/keyboard_input.
+        This prevents gazebo from reading it as we want to control
+        all dynamics of the robot.
+    -->
+    <remap from="cmd_vel_mux/input/teleop" to="/bb/keyboard_input"/>
+    
+    <!-- Launch the keyboard_teleop launch file to start the teleop-->
+    <include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch"/>
+</launch>

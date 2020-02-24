@@ -6,76 +6,94 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Twist, Vector3
 from kobuki_msgs.msg import BumperEvent
 
+# -- Configuration variables --
 
-# set up the publisher
+# How long we let keyboard send zero-magnitude Twists (seconds)
+keyboard_timeout = 1
+
+# -- Define global variables --
+
+# Reference to mobile_base velocity publisher
 command_pub = None
-# global time
-start_time = time.time()
-# keep track of the most recent keyboard command (Twist)
+
+# Last non-zero Keyboard message
+last_keyboard_time = 0
+
+# The most recent keyboard command
 key_cmd = Twist()
-# keep track of most recent bumper state (bool)
+
+# The most recent bumper state
 bumped = False
-# keep track of most recent planned command (Twist)
-plan_cmd = Twist()
+
+# The most recent reactive command
+reactive_cmd = Twist()
+
 
 def get_key_cmd(key_msg):
-    global key_cmd
+    global key_cmd, last_keyboard_time
     key_cmd = key_msg
+
+    if not is_zero_twist(key_cmd):
+        last_keyboard_time = rospy.get_time()
+
 
 def get_bumper_state(bumper_state):
     global bumped
     bumped = bumper_state
 
-def get_planned_cmd(planned_cmd):
-    global plan_cmd
-    plan_cmd = planned_cmd
+
+def get_reactive_cmd(reactive_msg):
+    global reactive_cmd
+    reactive_cmd = reactive_msg
+
 
 def is_zero_twist(twisty):
     return (twisty.linear.x == twisty.linear.y == twisty.linear.z == twisty.angular.x == twisty.angular.y == twisty.angular.z == 0)
 
-def send_command(timer_event):
-    # get local time at every tick to use for escape to go 1 ft
-    local_time = time.time() - start_time
 
+def send_command(timer_event):
     if bumped:
-        # bumper has been triggered, so halt
+        # Bumper has been triggered, so halt by sending the zero twist
         halt_cmd = Twist()
-        halt_cmd.linear = Vector3(0,0,0)
-        halt_cmd.angular = Vector3(0,0,0)
         command_pub.publish(halt_cmd)
         return
 
-    if is_zero_twist(key_cmd):
-        # there is no keyboard command being received
-        command_pub.publish(plan_cmd)
-    else:
-        # keyboard command is being received and should be passed through
+    if rospy.get_time() - last_keyboard_time < keyboard_timeout:
+        # Keyboard command is being received and should be passed through
         command_pub.publish(key_cmd)
+    else:
+        # There is no keyboard command being received, use our reactive command
+        command_pub.publish(reactive_cmd)
+
 
 def main():
     global command_pub
-    # use time to maintain commands when sensor vals change (e.g., for escape)
-    start_time = time.time()
 
     # initialize node
-    rospy.init_node('navigation_node', anonymous=True)
+    rospy.init_node('command_node')
 
     # set up publisher
-    command_pub = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size=1)
+    command_pub = rospy.Publisher(
+        "/mobile_base/commands/velocity", Twist, queue_size=1)
 
     # set up subscribers
+
     # let keyboard input take over
-    keyboard_sub = rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
+    rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
+
     # halt if bumper is triggered
-    bumper_sub = rospy.Subscriber("/mobilebase/events/bumper", BumperEvent, get_bumper_state)
+    rospy.Subscriber("/mobilebase/events/bumper",
+                     BumperEvent, get_bumper_state)
+
     # otherwise do command from planning
-    planning_sub = rospy.Subscriber("/bb/where2go", Twist, get_planned_cmd)
+    rospy.Subscriber("/bb/where2go", Twist, get_reactive_cmd)
 
     # Set up a timer to update robot's drive state at 10 Hz
-    update_timer = rospy.Timer(rospy.Duration(secs=0.1), send_command)
+    rospy.Timer(rospy.Duration(secs=0.1), send_command)
 
     # cycle through callbacks
     rospy.spin()
+
 
 if __name__ == '__main__':
     try:
