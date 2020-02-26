@@ -49,7 +49,7 @@
         Launch the keyboard control node. Leave uncommented when
         debugging as it messes up the screen output.
     -->
-    <!-- <include file="$(find project1_pkg)/launch/bb_teleop.launch"/> -->
+    <include file="$(find project1_pkg)/launch/bb_teleop.launch"/>
 
     <!-- 
         Launch the gmapping SLAM launch file. This handles creating
