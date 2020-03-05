@@ -5,11 +5,15 @@ import time
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist, Vector3
 from kobuki_msgs.msg import BumperEvent
+from nav_msgs.msg import Odometry
 
 # -- Configuration variables --
 
 # How long we let keyboard send zero-magnitude Twists (seconds)
 keyboard_timeout = 1
+
+# Proprtional speed gain
+speed_kp = 0.05
 
 # -- Define global variables --
 
@@ -28,6 +32,17 @@ bumped = False
 # The most recent reactive command
 reactive_cmd = Twist()
 
+# Last odom update
+odom = Odometry()
+
+# Control speed forward
+control_speed = 0
+
+
+def odom_callback(data):
+    global odom
+    odom = data
+
 
 def get_key_cmd(key_msg):
     global key_cmd, last_keyboard_time
@@ -39,7 +54,7 @@ def get_key_cmd(key_msg):
 
 def get_bumper_state(bumper_state):
     global bumped
-    bumped = bumper_state
+    bumped = bumped or bumper_state.state == 1
 
 
 def get_reactive_cmd(reactive_msg):
@@ -52,6 +67,8 @@ def is_zero_twist(twisty):
 
 
 def send_command(timer_event):
+    global control_speed
+
     if bumped:
         # Bumper has been triggered, so halt by sending the zero twist
         halt_cmd = Twist()
@@ -63,6 +80,11 @@ def send_command(timer_event):
         command_pub.publish(key_cmd)
     else:
         # There is no keyboard command being received, use our reactive command
+
+        # Apply proportional speed gain
+        control_speed += (reactive_cmd.linear.x - odom.twist.twist.linear.x) * speed_kp
+        reactive_cmd.linear.x = control_speed
+
         command_pub.publish(reactive_cmd)
 
 
@@ -82,14 +104,17 @@ def main():
     rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
 
     # halt if bumper is triggered
-    rospy.Subscriber("/mobilebase/events/bumper",
+    rospy.Subscriber("/mobile_base/events/bumper",
                      BumperEvent, get_bumper_state)
 
     # otherwise do command from planning
     rospy.Subscriber("/bb/where2go", Twist, get_reactive_cmd)
 
-    # Set up a timer to update robot's drive state at 10 Hz
-    rospy.Timer(rospy.Duration(secs=0.1), send_command)
+    # Subscribe to odometry
+    rospy.Subscriber("/odom", Odometry, odom_callback)
+
+    # Set up a timer to update robot's drive state at 20 Hz
+    rospy.Timer(rospy.Duration(secs=0.05), send_command)
 
     # cycle through callbacks
     rospy.spin()
