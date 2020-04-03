@@ -9,7 +9,7 @@
         Define arguments for simulation. The most important is the world_file
         argument which we use to define our world_file when launching gazebo.
     -->
-    <arg name="world_file"  default="$(find project1_pkg)/worlds/room_world.world"/>
+    <arg name="world_file"  default="$(find project1_pkg)/worlds/devon_floor_1.world"/>
     <arg name="base"      value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
     <arg name="battery"   value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 --> 
     <arg name="gui" default="true"/>
