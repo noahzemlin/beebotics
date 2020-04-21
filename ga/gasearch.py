@@ -1,8 +1,20 @@
 import random
 import math
 import copy
-import numpy as np
 import matplotlib.pyplot as plt
+
+
+def clamp(x, low, high):
+    if x < low:
+        return low
+    if x > high:
+        return high
+    return x
+
+
+def rand_pt_near_pt(pt, w, h):
+    return clamp(pt[0] + random.randrange(-2, 3), 0, w-1), clamp(pt[1] + random.randrange(-2, 3), 0, h-1)
+
 
 class GAChromosome:
 
@@ -10,9 +22,6 @@ class GAChromosome:
         self.pts = []
 
     def breed_with(self, significant_other):
-        baby1 = GAChromosome()
-        baby2 = GAChromosome()
-
         # choose crossover pts randomly?????
         crossover_pt1 = random.randint(1, len(self.pts) - 1)
         crossover_pt2 = random.randint(1, len(significant_other.pts) - 1)
@@ -27,21 +36,35 @@ class GAChromosome:
 
         return baby1, baby2
 
+    def mutate(self, w, h):
+        rng = random.random()
+        n = len(self.pts)
+        if rng < 0.4:
+            # Move random pt in chromosome
+            rand_pt_i = random.randint(1, n - 1)
+            self.pts[rand_pt_i] = rand_pt_near_pt(self.pts[rand_pt_i], w, h)
+        elif rng < 0.8 and n > 2:
+            # Remove random pt in chromosome
+            self.pts.pop(random.randint(1, n - 1))
+        else:
+            # Add random pt in chromosome
+            rand_pt_i = random.randint(0, n - 1)
+            self.pts.insert(rand_pt_i + 1, rand_pt_near_pt(self.pts[rand_pt_i], w, h))
+
     # delicious cost function
     def get_path_length(self):
         total = 0
 
         for i in range(1, len(self.pts)):
-            total += math.sqrt((self.pts[i][0] - self.pts[i-1][0])**2 + (self.pts[i][1] - self.pts[i-1][1])**2)
+            total += math.sqrt((self.pts[i][0] - self.pts[i - 1][0]) ** 2 + (self.pts[i][1] - self.pts[i - 1][1]) ** 2)
 
         return total
-        
+
 
 class GASearch:
+    MUTATION_PROB = 0.80
 
-    MUTATION_PROB = 0.2
-
-    def __init__(self, world, population_size = 100):
+    def __init__(self, world, population_size=100):
         self.world = world
         self.height = len(world)
         self.width = len(world[0])
@@ -72,7 +95,7 @@ class GASearch:
             stepY = 1
             sideDistY = (mapY + 1.0 - pos[1]) * deltaDistY
 
-        if dir[0]*dir[0] + dir[1]*dir[1] > 0:
+        if dir[0] * dir[0] + dir[1] * dir[1] > 0:
 
             cumulative_movement = [0, 0]
 
@@ -84,16 +107,16 @@ class GASearch:
                 if not (dir[0] != cumulative_movement[0] or dir[1] != cumulative_movement[1]):
                     break
 
+                self.world_copy[mapY][mapX] = 1
+
                 if sideDistX < sideDistY:
                     sideDistX += deltaDistX
                     mapX += stepX
                     cumulative_movement[0] += stepX
-                    side = 0
                 else:
                     sideDistY += deltaDistY
                     mapY += stepY
                     cumulative_movement[1] += stepY
-                    side = 1
 
         else:
             if self.world_copy[mapY][mapX] > 0:
@@ -119,23 +142,22 @@ class GASearch:
             if self.world_copy[lp[1]][lp[0]] == 1:
                 return 100003
 
-            # Make the first point an obstacle for the remaining lines
-            # TODO: make entire lines obstacles
-            self.world_copy[fp[1]][fp[0]] = 1
-
         # If path length is 0, bad score
         if summy == 0:
             return 100002
 
+        # This is basically where the real fitness function is
         if final_pt[0] == goal[0] and final_pt[1] == goal[1]:
-            # if valid, reward it
-            return 1 - (1 / (summy + len(chromie.pts)))
+            # Fitness function if the chromosome ends at the goal
+            return 1 - (1 / (summy * 10. + len(chromie.pts)))
         else:
-            # is this D* now?
-            return 0.2 * len(chromie.pts) + (200. / summy) + 3.0 * math.sqrt((final_pt[0] - goal[0])**2 + (final_pt[1] - goal[1])**2)
+            # Fitness function if the chromosome does not end at the goal
+            # Is weighted sum of # pts, reciprocal of length of path, and distance
+            # from end pt to goal. It is very bad
+            return 0.2 * len(chromie.pts) + (300. / summy) + 1.0 * math.sqrt(
+                (final_pt[0] - goal[0]) ** 2 + (final_pt[1] - goal[1]) ** 2)
 
-
-    def search(self, start, goal, iters = 100000):
+    def search(self, start, goal, iters=100000):
 
         self.population = [GAChromosome() for i in range(self.population_size)]
 
@@ -143,7 +165,7 @@ class GASearch:
         for chromie in self.population:
             chromie.pts = [start, self.rand_pt_in_world()]
 
-        self.population.sort(key = lambda x: self._sort_key(x, goal))
+        self.population.sort(key=lambda x: self._sort_key(x, goal))
 
         last_best = 100000000
         for _ in range(iters):
@@ -161,42 +183,30 @@ class GASearch:
                 plt.imshow(self.world, interpolation='none')
                 plt.ion()
                 for i in range(0, len(pop_best_path.pts) - 1):
-                    pt1 = [pop_best_path.pts[i][0], pop_best_path.pts[i+1][0]]
-                    pt2 = [pop_best_path.pts[i][1], pop_best_path.pts[i+1][1]]
-                    plt.plot(pt1, pt2, marker = 'o', color='green')
+                    pt1 = [pop_best_path.pts[i][0], pop_best_path.pts[i + 1][0]]
+                    pt2 = [pop_best_path.pts[i][1], pop_best_path.pts[i + 1][1]]
+                    plt.plot(pt1, pt2, marker='o', color='green')
                 plt.draw()
                 plt.show()
                 plt.pause(0.001)
 
-            # Create children
-            for i in range(int(self.population_size//1.2), self.population_size-1, 2):
-                mom = self.population[random.randint(0, int(self.population_size//1.2))]
-                dad = self.population[random.randint(0, int(self.population_size//1.2))]
-                self.population[i], self.population[i+1] = mom.breed_with(dad)
+            # Replace bottom 2% with new chromosomes
+            for i in range(int(self.population_size * 0.98), self.population_size - 1, 2):
+                # Select parents from top 5%
+                inds = random.sample(range(int(self.population_size * 0.05)), k=2)
+                mom = self.population[inds[0]]
+                dad = self.population[inds[1]]
+                self.population[i], self.population[i + 1] = mom.breed_with(dad)
 
                 # Mutation for child 1
                 if random.random() < self.MUTATION_PROB:
-                    rng = random.random()
-                    n = len(self.population[i].pts)
-                    if rng < 0.6:
-                        self.population[i].pts[random.randint(1, n-1)] = self.rand_pt_in_world()
-                    elif rng < 0.9 and n > 2:
-                        self.population[i].pts.pop(random.randint(1, n-1))
-                    else:
-                        self.population[i].pts.append(self.rand_pt_in_world())
+                    self.population[i].mutate(self.width, self.height)
 
                 # Mutation for child 2
                 if random.random() < self.MUTATION_PROB:
-                    rng = random.random()
-                    n = len(self.population[i+1].pts)
-                    if rng < 0.6:
-                        self.population[i+1].pts[random.randint(1, n-1)] = self.rand_pt_in_world()
-                    elif rng < 0.9 and n > 2:
-                        self.population[i+1].pts.pop(random.randint(1, n-1))
-                    else:
-                        self.population[i+1].pts.append(self.rand_pt_in_world())
-                    
+                    self.population[i+1].mutate(self.width, self.height)
+
             random.shuffle(self.population)
-            self.population.sort(key = lambda x: self._sort_key(x, goal))
+            self.population.sort(key=lambda x: self._sort_key(x, goal))
 
         return self.population[0]
