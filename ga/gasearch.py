@@ -1,5 +1,8 @@
 import random
 import math
+import copy
+import numpy as np
+import matplotlib.pyplot as plt
 
 class GAChromosome:
 
@@ -25,7 +28,7 @@ class GAChromosome:
         return baby1, baby2
 
     # delicious cost function
-    def get_sqr_path_length(self):
+    def get_path_length(self):
         total = 0
 
         for i in range(1, len(self.pts)):
@@ -36,7 +39,7 @@ class GAChromosome:
 
 class GASearch:
 
-    MUTATION_PROB = 0.15
+    MUTATION_PROB = 0.2
 
     def __init__(self, world, population_size = 100):
         self.world = world
@@ -49,8 +52,8 @@ class GASearch:
 
     def raycast(self, pos, dir):
 
-        deltaDistX = 0 if dir[1] == 0 else 1 if dir[0] == 0 else abs(1 / dir[0])
-        deltaDistY = 0 if dir[0] == 0 else 1 if dir[1] == 0 else abs(1 / dir[1])
+        deltaDistX = 0 if dir[1] == 0 else (1 if dir[0] == 0 else abs(1. / dir[0]))
+        deltaDistY = 0 if dir[0] == 0 else (1 if dir[1] == 0 else abs(1. / dir[1]))
 
         mapX = int(pos[0])
         mapY = int(pos[1])
@@ -74,7 +77,7 @@ class GASearch:
             cumulative_movement = [0, 0]
 
             while mapX >= 0 and mapX < self.width and mapY >= 0 and mapY < self.height:
-                if self.world[mapY][mapX] > 0:
+                if self.world_copy[mapY][mapX] > 0:
                     return True
 
                 # here instead of in while condition to still do previous check
@@ -93,71 +96,103 @@ class GASearch:
                     side = 1
 
         else:
-            if self.world[mapY][mapX] > 0:
+            if self.world_copy[mapY][mapX] > 0:
                 return True
 
         return False
 
     def _sort_key(self, chromie, goal):
         final_pt = chromie.pts[-1:][0]
-        summy = chromie.get_sqr_path_length()
+        summy = chromie.get_path_length()
+
+        self.world_copy = copy.deepcopy(self.world)
         for i in range(0, len(chromie.pts) - 1):
             fp = chromie.pts[i]
             lp = chromie.pts[i + 1]
-            if lp in chromie.pts[:i+1]:
-                return 10000
-            if self.raycast(fp, (lp[0] - fp[0], lp[1] - fp[1])):
-                return 100000 # bad dont hit pls
 
-        # pls move
+            # Make sure there are no collisisons
+            if self.raycast(fp, (lp[0] - fp[0], lp[1] - fp[1])):
+                return 100001
+
+            # Make sure last point is not in obstruction
+            # TODO: put in raycast
+            if self.world_copy[lp[1]][lp[0]] == 1:
+                return 100003
+
+            # Make the first point an obstacle for the remaining lines
+            # TODO: make entire lines obstacles
+            self.world_copy[fp[1]][fp[0]] = 1
+
+        # If path length is 0, bad score
         if summy == 0:
-            return 100000
+            return 100002
 
         if final_pt[0] == goal[0] and final_pt[1] == goal[1]:
             # if valid, reward it
-            print("found goal")
-            return 1 - (1 / summy)
+            return 1 - (1 / (summy + len(chromie.pts)))
         else:
             # is this D* now?
-            return len(chromie.pts)**1.4 + math.sqrt((final_pt[0] - goal[0])**2 + (final_pt[1] - goal[1])**2) - summy
+            return 0.2 * len(chromie.pts) + (200. / summy) + 3.0 * math.sqrt((final_pt[0] - goal[0])**2 + (final_pt[1] - goal[1])**2)
 
 
     def search(self, start, goal, iters = 100000):
+
         self.population = [GAChromosome() for i in range(self.population_size)]
 
+        # Initalize population
         for chromie in self.population:
             chromie.pts = [start, self.rand_pt_in_world()]
 
         self.population.sort(key = lambda x: self._sort_key(x, goal))
 
-        last_best = 1000
-
+        last_best = 100000000
         for _ in range(iters):
-            god = self.population[0]
+            pop_best_path = self.population[0]
 
-            new_best = self._sort_key(god, goal)
+            # Set new best (only for debugging, can be removed eventually)
+            new_best = self._sort_key(pop_best_path, goal)
             if new_best < last_best:
                 print("score: ", new_best)
-                print("length: ", god.get_sqr_path_length())
-                print(god.pts)
+                print("length: ", pop_best_path.get_path_length())
+                print(pop_best_path.pts)
                 last_best = new_best
 
+                plt.clf()
+                plt.imshow(self.world, interpolation='none')
+                plt.ion()
+                for i in range(0, len(pop_best_path.pts) - 1):
+                    pt1 = [pop_best_path.pts[i][0], pop_best_path.pts[i+1][0]]
+                    pt2 = [pop_best_path.pts[i][1], pop_best_path.pts[i+1][1]]
+                    plt.plot(pt1, pt2, marker = 'o', color='green')
+                plt.draw()
+                plt.show()
+                plt.pause(0.001)
+
+            # Create children
             for i in range(int(self.population_size//1.2), self.population_size-1, 2):
                 mom = self.population[random.randint(0, int(self.population_size//1.2))]
                 dad = self.population[random.randint(0, int(self.population_size//1.2))]
                 self.population[i], self.population[i+1] = mom.breed_with(dad)
 
+                # Mutation for child 1
                 if random.random() < self.MUTATION_PROB:
-                    if random.random() < 0.5:
-                        n = len(self.population[i].pts)
+                    rng = random.random()
+                    n = len(self.population[i].pts)
+                    if rng < 0.6:
                         self.population[i].pts[random.randint(1, n-1)] = self.rand_pt_in_world()
+                    elif rng < 0.9 and n > 2:
+                        self.population[i].pts.pop(random.randint(1, n-1))
                     else:
                         self.population[i].pts.append(self.rand_pt_in_world())
 
+                # Mutation for child 2
                 if random.random() < self.MUTATION_PROB:
-                    if random.random() < 0.5:
-                        n = len(self.population[i+1].pts)
+                    rng = random.random()
+                    n = len(self.population[i+1].pts)
+                    if rng < 0.6:
                         self.population[i+1].pts[random.randint(1, n-1)] = self.rand_pt_in_world()
+                    elif rng < 0.9 and n > 2:
+                        self.population[i+1].pts.pop(random.randint(1, n-1))
                     else:
                         self.population[i+1].pts.append(self.rand_pt_in_world())
                     
