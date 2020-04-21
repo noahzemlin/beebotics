@@ -14,10 +14,14 @@
     <arg name="battery"   value="$(optenv TURTLEBOT_BATTERY /proc/acpi/battery/BAT0)"/>  <!-- /proc/acpi/battery/BAT0 --> 
     <arg name="gui" default="true"/>
     <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
-    <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro --> 
+    <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR asus_xtion_pro)"/>  <!-- kinect, asus_xtion_pro --> 
+<!-- 
+    <include file="$(find turtlebot_bringup)/launch/3dsensor.launch">
+        <arg name="rgb_processing" value="false" />
+        <arg name="depth_registration" value="false" />
+        <arg name="depth_processing" value="false" />
+    <include> -->
 
-
-    
 
     <!-- Launch gazebo with the world_file we declared earlier. -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -54,7 +58,7 @@
 
     <include file="$(find turtlebot_rviz_launchers)/launch/view_navigation.launch"/>
 
-    <arg name="map_file" default="$(find project1_pkg)/devon.yaml"/>
+    <arg name="map_file" default="$(find project1_pkg)/complete_devon.yaml"/>
 
     <!-- Run the map server -->
     <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
