@@ -95,8 +95,7 @@ def main():
     rospy.init_node('command_node')
 
     # set up publisher
-    command_pub = rospy.Publisher(
-        "/mobile_base/commands/velocity", Twist, queue_size=1)
+    command_pub = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size=1)
 
     # set up subscribers
 
@@ -104,8 +103,7 @@ def main():
     rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
 
     # halt if bumper is triggered
-    rospy.Subscriber("/mobile_base/events/bumper",
-                     BumperEvent, get_bumper_state)
+    rospy.Subscriber("/mobile_base/events/bumper", BumperEvent, get_bumper_state)
 
     # otherwise do command from planning
     rospy.Subscriber("/bb/where2go", Twist, get_reactive_cmd)
