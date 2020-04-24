@@ -2,11 +2,8 @@
 
 import rospy
 from math import isnan, isinf, copysign
-from std_msgs.msg import String, Bool
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, Vector3
-from nav_msgs.msg import Odometry
-import random
 
 # -- Configuration variables --
 
@@ -67,11 +64,6 @@ def get_laser_val(laser_cmd):
         left_side = 0
 
 
-def random_turn():
-    rand_degree = random.randint(-15, 15)
-    return rand_degree
-
-
 def publish_w2g_cmd(linear_velocity, angular_velocity):
     w2g_cmd = Twist()
     w2g_cmd.linear = linear_velocity
@@ -84,8 +76,8 @@ def receive_heading(hdg):
     current_hading = hdg.data
 
 
+# from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
 def get_angle_diff(angle1, angle2):
-    # from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
     delta = angle1 - angle2
     delta = (delta + 180) % 360 - 180
     return delta
@@ -96,6 +88,7 @@ def get_planned_path(plan_twist):
     global plan_hdg, plan_speed
     plan_hdg = plan_twist.angular.z
     plan_speed = plan_twist.linear.x
+
 
 def send_command(timer_event):
     global target_heading

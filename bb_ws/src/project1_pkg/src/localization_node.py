@@ -5,7 +5,6 @@ from math import degrees
 import tf
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
-import random
 
 ## Global Variables
 hdg_pub = None
@@ -48,7 +47,7 @@ def main():
 
     # subscribe to odom
     rospy.Subscriber("/odom", Odometry, odom_callback)
-    
+
     # publish current heading and position
     hdg_pub = rospy.Publisher("/bb/hdg", Float32, queue_size=1)
     pos_pub = rospy.Publisher("/bb/pos", Point, queue_size=1)
