@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-import time
-from std_msgs.msg import String
-from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Twist
 from kobuki_msgs.msg import BumperEvent
 from nav_msgs.msg import Odometry
 
@@ -29,8 +27,8 @@ key_cmd = Twist()
 # The most recent bumper state
 bumped = False
 
-# The most recent reactive command
-reactive_cmd = Twist()
+# The most recent nav command
+mav_cmd = Twist()
 
 # Last odom update
 odom = Odometry()
@@ -57,9 +55,9 @@ def get_bumper_state(bumper_state):
     bumped = bumped or bumper_state.state == 1
 
 
-def get_reactive_cmd(reactive_msg):
-    global reactive_cmd
-    reactive_cmd = reactive_msg
+def get_nav_cmd(nav_msg):
+    global nav_cmd
+    nav_cmd = nav_msg
 
 
 def is_zero_twist(twisty):
@@ -82,41 +80,34 @@ def send_command(timer_event):
         # There is no keyboard command being received, use our reactive command
 
         # Apply proportional speed gain
-        control_speed += (reactive_cmd.linear.x - odom.twist.twist.linear.x) * speed_kp
-        reactive_cmd.linear.x = control_speed
+        control_speed += (nav_cmd.linear.x - odom.twist.twist.linear.x) * speed_kp
+        nav_cmd.linear.x = control_speed
 
-        command_pub.publish(reactive_cmd)
+        command_pub.publish(nav_cmd)
 
 
 def main():
     global command_pub
 
     # initialize node
-    rospy.init_node('command_node')
+    rospy.init_node('control_node')
 
-    # set up publisher
-    command_pub = rospy.Publisher(
-        "/mobile_base/commands/velocity", Twist, queue_size=1)
+    # publish command to the turtlebot
+    command_pub = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size=1)
 
-    # set up subscribers
-
+    # Subscribers
     # let keyboard input take over
     rospy.Subscriber("/bb/keyboard_input", Twist, get_key_cmd)
-
     # halt if bumper is triggered
-    rospy.Subscriber("/mobile_base/events/bumper",
-                     BumperEvent, get_bumper_state)
-
+    rospy.Subscriber("/mobile_base/events/bumper", BumperEvent, get_bumper_state)
     # otherwise do command from planning
-    rospy.Subscriber("/bb/where2go", Twist, get_reactive_cmd)
-
-    # Subscribe to odometry
+    rospy.Subscriber("/bb/where2go", Twist, get_nav_cmd)
+    # subscribe to odometry
     rospy.Subscriber("/odom", Odometry, odom_callback)
 
     # Set up a timer to update robot's drive state at 20 Hz
     rospy.Timer(rospy.Duration(secs=0.05), send_command)
-
-    # cycle through callbacks
+    # pump callbacks
     rospy.spin()
 
 

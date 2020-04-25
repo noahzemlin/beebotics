@@ -2,8 +2,10 @@
 
 <launch>
     <!-- Launch our nodes that control the robot. -->
-    <node pkg="project1_pkg" type="command_node.py" name="command_node" output="screen"/>
-    <node pkg="project1_pkg" type="reactive_node.py" name="reactive_node" output="screen"/>
+    <node pkg="project1_pkg" type="control_node.py" name="control_node" output="screen"/>
+    <node pkg="project1_pkg" type="nav_node.py" name="nav_node" output="screen"/>
+    <node pkg="project1_pkg" type="planning_node.py" name="planning_node" output="screen"/>
+    <node pkg="project1_pkg" type="localization_node.py" name="localization_node" output="screen"/>
 
     <!--
         Define arguments for simulation. The most important is the world_file
