@@ -24,7 +24,7 @@ angle_diff_threshold = 3
 heading_kp = 0.07
 
 # Forward speed (m/s)
-forward_speed = 0.5
+forward_speed = 0.4
 
 # -- Define global variables --
 
