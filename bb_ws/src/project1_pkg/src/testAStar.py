@@ -2,7 +2,7 @@ from aStarSearch import aStar
 import matplotlib.pyplot as plt
 
 space = [
-    [0, 0, 0, 1, 1, 0, 1, 0, 0, 3],
+    [0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
     [0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
     [0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
@@ -14,10 +14,10 @@ space = [
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
-search = aStar(space)
+search = aStar(space, [0, 12], [9, 0])
 path = search.grid_astar()
 path = search.convert(path)
 print(path)

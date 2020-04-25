@@ -2,8 +2,7 @@
 
 <launch>
     <!-- Launch our nodes that control the robot. -->
-    <node pkg="project1_pkg" type="command_node.py" name="command_node" output="screen"/>
-    <node pkg="project1_pkg" type="reactive_node.py" name="reactive_node" output="screen"/>
+    <node pkg="project1_pkg" type="control_node.py" name="control_node" output="screen"/>
 
     <!--
         Define arguments for simulation. The most important is the world_file
@@ -68,7 +67,7 @@
         Launch the keyboard control node. Leave uncommented when
         debugging as it messes up the screen output.
     -->
-    <include file="$(find project1_pkg)/launch/bb_teleop.launch"/>
+    <!-- <include file="$(find project1_pkg)/launch/bb_teleop.launch"/> -->
 
     <!-- AMCL -->
     <arg name="custom_amcl_launch_file" default="$(find turtlebot_navigation)/launch/includes/amcl/$(arg 3d_sensor)_amcl.launch.xml"/>

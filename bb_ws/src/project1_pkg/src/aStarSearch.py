@@ -83,6 +83,18 @@ class aStar():
                 self.goal_y = y
                 self.goal_x = x
 
+    # Create necessary class variables with start and goal coordinates
+    def __init__(self,map, start, goal):
+        self.map = map
+        self.curr_x = start[1]
+        self.curr_y = start[0]
+        self.goal_x = goal[1]
+        self.goal_y = goal[0]
+        self.left_bound = None
+        self.right_bound = None
+        self.upper_bound = None
+        self.lower_bound = None
+
     def findChildren(self,parent):
         """
         Find the valid childrent of the parent
@@ -202,7 +214,6 @@ class aStar():
             temp = path[i][0]
             path[i][0] = path[i][1]
             path[i][1] = temp
-            print("x:", path[i][0], "y:", path[i][1])
 
         return path
 

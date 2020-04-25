@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 import rospy
+import pickle
+import os
+import numpy as np
 from geometry_msgs.msg import Twist
 from kobuki_msgs.msg import BumperEvent
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, OccupancyGrid
 
 # -- Configuration variables --
 
@@ -85,6 +88,38 @@ def send_command(timer_event):
 
         command_pub.publish(nav_cmd)
 
+first_map = True
+
+def global_map_callback(grid):
+    global first_map
+
+    if len(grid.data) == 0:
+        print("0 size map")
+        return
+
+    first_map = True
+
+    print(str(len(grid.data)) + " size map")
+
+    data = grid.data
+    height = grid.info.height
+    width = grid.info.width
+
+    print("height: " + str(height) + ", width: " + str(width))
+
+    output = np.reshape(data, (height, width))
+
+    print(output)
+
+    print("working dir: " + str(os.getcwd()))
+
+    pickle.dump(grid.info, open("metadata.p", "wb"))
+    pickle.dump(output, open("global_map.p", "wb"))
+
+    with open("test.test", "w") as f:
+        f.write("yeet")
+
+    print("Global map saved!!!!!!")
 
 def main():
     global command_pub
@@ -104,6 +139,9 @@ def main():
     rospy.Subscriber("/bb/where2go", Twist, get_nav_cmd)
     # subscribe to odometry
     rospy.Subscriber("/odom", Odometry, odom_callback)
+    
+    #test
+    rospy.Subscriber("/map", OccupancyGrid, global_map_callback)
 
     # Set up a timer to update robot's drive state at 20 Hz
     rospy.Timer(rospy.Duration(secs=0.05), send_command)
