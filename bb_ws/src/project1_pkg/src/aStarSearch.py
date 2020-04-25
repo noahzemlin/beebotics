@@ -1,12 +1,12 @@
 import sys
 import os
-import queue
+import Queue
 import math
 import numpy as np
 import sys
 import math
 
-# Adopted from Elliott and De Los Angeles AI Project 1 
+# Adopted from Elliott and de los Angeles AI Project 1 
 
 def euclDist(curr_x,curr_y, goal_x, goal_y):
     '''Calcualte the euclidian distance for our admissible and consistent heuristic
@@ -76,10 +76,10 @@ class aStar():
         (xs, ys) = np.nonzero(self.map)
         for i, x in enumerate(xs):
             y = ys[i]
-            if (self.map[x, y] == 2):
+            if (self.map[x][y] == 2):
                 self.curr_y = y
                 self.curr_x = x
-            elif (self.map[x, y] == 3):
+            elif (self.map[x][y] == 3):
                 self.goal_y = y
                 self.goal_x = x
 
@@ -97,16 +97,16 @@ class aStar():
         gn = parent.gn
         # Find the children of the parent node
         children = []
-        if((x - 1) >= self.left_bound) and (self.map[x-1,y] != 1) and (self.map[x-1,y] != 5):
+        if((x - 1) >= self.left_bound) and (self.map[x-1][y] != 1) and (self.map[x-1][y] != 5):
             children.append(Node(x-1, y, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((x + 1) <= self.right_bound) and (self.map[x+1,y] != 1) and (self.map[x+1,y] != 5):
+        if((x + 1) <= self.right_bound) and (self.map[x+1][y] != 1) and (self.map[x+1][y] != 5):
             children.append(Node(x+1, y, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((y - 1) >= self.lower_bound) and (self.map[x,y-1] != 1) and (self.map[x,y-1] != 5):
+        if((y - 1) >= self.lower_bound) and (self.map[x][y-1] != 1) and (self.map[x][y-1] != 5):
             children.append(Node(x, y-1, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((y + 1) <= self.upper_bound) and (self.map[x,y+1] != 1) and (self.map[x,y+1] != 5):
+        if((y + 1) <= self.upper_bound) and (self.map[x][y+1] != 1) and (self.map[x][y+1] != 5):
             children.append(Node(x, y+1, self.goal_x, self.goal_y,1,gn, parent))
         return children
 
@@ -126,9 +126,9 @@ class aStar():
         max_steps = 1000
         step_count = 0
         # Set map boundaries
-        self.upper_bound = self.map.shape[1] -1
+        self.upper_bound = len(self.map[0])-1 #self.map.shape[1] -1
         self.lower_bound = 0
-        self.right_bound = self.map.shape[0] -1
+        self.right_bound = len(self.map) - 1#self.map.shape[0] -1
         self.left_bound = 0
         # Add starting node to fringe
         fringe.append(curr_node)
