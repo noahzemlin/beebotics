@@ -19,6 +19,7 @@ space = [
 
 search = aStar(space)
 path = search.grid_astar()
+path = search.convert(path)
 print(path)
 print("distance:", len(path))
 
@@ -28,10 +29,10 @@ plt.ion()
 for i in range(0, len(path) - 1):
     pt1 = [path[i][0], path[i + 1][0]]
     pt2 = [path[i][1], path[i + 1][1]]
-    plt.plot(pt2, pt1, marker='o', color='green')
+    plt.plot(pt1, pt2, marker='o', color='green')
 plt.draw()
 plt.show()
-plt.pause(100)#0.001)
+plt.pause(100)
 
 
 # best_path = searchy.search((0,12), (9, 0), iters = 10000)

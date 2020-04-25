@@ -186,3 +186,24 @@ class aStar():
         self.curr_y = curr_y
         return self.grid_astar()
 
+    def convert(self, path):
+        """
+        Flip the x and y coordinates from initial A* implementation to line up with visualization axes
+        Switching order from start node to goal node
+
+        Parameters:
+            path: Initial path from A* with nodes going from goal to start
+
+        Returns:
+            list of [x,y]: Represents coordinates of nodes on path to get from start to end goal
+        """
+        path.reverse()
+        for i in range(0, len(path)):
+            temp = path[i][0]
+            path[i][0] = path[i][1]
+            path[i][1] = temp
+            print("x:", path[i][0], "y:", path[i][1])
+
+        return path
+
+
