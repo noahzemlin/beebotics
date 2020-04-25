@@ -135,12 +135,12 @@ class aStar():
         curr_node = Node(self.curr_x, self.curr_y, self.goal_x, self.goal_y,0,0)
         # Empty list that will be sorted every time new item is added
         fringe = [] 
-        max_steps = 1000
+        max_steps = 100000
         step_count = 0
         # Set map boundaries
-        self.upper_bound = len(self.map[0])-1 #self.map.shape[1] -1
+        self.upper_bound = len(self.map[0])-1
         self.lower_bound = 0
-        self.right_bound = len(self.map) - 1#self.map.shape[0] -1
+        self.right_bound = len(self.map) - 1
         self.left_bound = 0
         # Add starting node to fringe
         fringe.append(curr_node)
