@@ -2,6 +2,7 @@
 
 import rospy
 from math import isnan, isinf, copysign
+from std_msgs.msg import Float32
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, Vector3
 
