@@ -37,7 +37,10 @@ def receive_position(position):
 def receive_path(point_cloud):
     # set path for pure pursuit
     global pp
-    pp.set_points(point_cloud.points)
+    pts = []
+    for pt in point_cloud.points:
+        pts.append((pt.x, pt.y))
+    pp.set_points(pts)
 
 
 # based on github.com/SoonerRobotics/nrc_software/blob/master/nrc_ws/src/nrc_nav/src/nrc_drive_pp.py
