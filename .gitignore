@@ -2,3 +2,5 @@
 **/build
 **/.vscode
 *.pyc
+.idea/
+venv/
