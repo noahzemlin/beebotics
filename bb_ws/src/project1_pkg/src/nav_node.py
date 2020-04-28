@@ -21,7 +21,7 @@ angle_diff_threshold = 3
 heading_kp = 0.07
 
 # Forward speed (m/s)
-forward_speed = 0.4
+forward_speed = 0.35
 
 # -- Define global variables --
 
@@ -74,7 +74,7 @@ def publish_w2g_cmd(linear_velocity, angular_velocity):
 
 def receive_heading(hdg):
     global current_heading
-    current_hading = hdg.data
+    current_heading = hdg.data
 
 
 # from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
@@ -116,13 +116,16 @@ def send_command(timer_event):
     if left_in_range and right_in_range:
         # both sensors see something about 1 ft away, so escape (fixed action)
         # TODO maybe change this behavior?
+        print("symm")
         target_heading = (current_heading + 180) % 360
     # avoid asymmetric obstacles within 1ft in front of the robot.
     elif left_in_range:
         # only left sensor sees obstacle, so avoid by turning right 20 degrees (reflex)
+        print("leff")
         target_heading = (current_heading - 20) % 360
     elif right_in_range:
         # only right sensor sees obstacle, so avoid by turning left 20 degrees (reflex)
+        print("righ")
         target_heading = (current_heading + 20) % 360
     else:
         # Follow the planned path

@@ -39,6 +39,8 @@ odom = Odometry()
 # Control speed forward
 control_speed = 0
 
+nav_cmd = None
+
 
 def odom_callback(data):
     global odom
@@ -79,7 +81,7 @@ def send_command(timer_event):
     if rospy.get_time() - last_keyboard_time < keyboard_timeout:
         # Keyboard command is being received and should be passed through
         command_pub.publish(key_cmd)
-    else:
+    elif nav_cmd is not None:
         # There is no keyboard command being received, use our reactive command
 
         # Apply proportional speed gain
@@ -90,45 +92,16 @@ def send_command(timer_event):
 
 first_map = True
 
-def global_map_callback(grid):
-    global first_map
-
-    if len(grid.data) == 0:
-        print("0 size map")
-        return
-
-    first_map = True
-
-    print(str(len(grid.data)) + " size map")
-
-    data = grid.data
-    height = grid.info.height
-    width = grid.info.width
-
-    print("height: " + str(height) + ", width: " + str(width))
-
-    output = np.reshape(data, (height, width))
-
-    print(output)
-
-    print("working dir: " + str(os.getcwd()))
-
-    pickle.dump(grid.info, open("metadata.p", "wb"))
-    pickle.dump(output, open("global_map.p", "wb"))
-
-    with open("test.test", "w") as f:
-        f.write("yeet")
-
-    print("Global map saved!!!!!!")
-
 def main():
-    global command_pub
+    global command_pub, last_keyboard_time
 
     # initialize node
     rospy.init_node('control_node')
 
     # publish command to the turtlebot
     command_pub = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size=1)
+
+    last_keyboard_time = rospy.get_time()
 
     # Subscribers
     # let keyboard input take over
@@ -139,9 +112,6 @@ def main():
     rospy.Subscriber("/bb/where2go", Twist, get_nav_cmd)
     # subscribe to odometry
     rospy.Subscriber("/odom", Odometry, odom_callback)
-    
-    #test
-    rospy.Subscriber("/map", OccupancyGrid, global_map_callback)
 
     # Set up a timer to update robot's drive state at 20 Hz
     rospy.Timer(rospy.Duration(secs=0.05), send_command)

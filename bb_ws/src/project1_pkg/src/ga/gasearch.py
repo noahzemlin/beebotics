@@ -3,6 +3,7 @@ import math
 import copy
 import matplotlib.pyplot as plt
 
+DEBUG = True
 
 def clamp(x, low, high):
     if x < low:
@@ -174,23 +175,24 @@ class GASearch:
             pop_best_path = self.population[0]
 
             # Set new best (only for debugging, can be removed eventually)
-            new_best = self._sort_key(pop_best_path, goal)
-            if new_best < last_best:
-                print("score: ", new_best)
-                print("length: ", pop_best_path.get_path_length())
-                print(pop_best_path.pts)
-                last_best = new_best
+            if DEBUG:
+                new_best = self._sort_key(pop_best_path, goal)
+                if new_best < last_best:
+                    print("score: ", new_best)
+                    print("length: ", pop_best_path.get_path_length())
+                    print(pop_best_path.pts)
+                    last_best = new_best
 
-                plt.clf()
-                plt.imshow(self.world, interpolation='none')
-                plt.ion()
-                for i in range(0, len(pop_best_path.pts) - 1):
-                    pt1 = [pop_best_path.pts[i][0], pop_best_path.pts[i + 1][0]]
-                    pt2 = [pop_best_path.pts[i][1], pop_best_path.pts[i + 1][1]]
-                    plt.plot(pt1, pt2, marker='o', color='green')
-                plt.draw()
-                plt.show()
-                plt.pause(0.001)
+                    plt.clf()
+                    plt.imshow(self.world, interpolation='none')
+                    plt.ion()
+                    for i in range(0, len(pop_best_path.pts) - 1):
+                        pt1 = [pop_best_path.pts[i][0], pop_best_path.pts[i + 1][0]]
+                        pt2 = [pop_best_path.pts[i][1], pop_best_path.pts[i + 1][1]]
+                        plt.plot(pt1, pt2, marker='o', color='green')
+                    plt.draw()
+                    plt.show()
+                    plt.pause(0.001)
 
             # Replace bottom 2% with new chromosomes
             for i in range(int(self.population_size * 0.98), self.population_size - 1, 2):
