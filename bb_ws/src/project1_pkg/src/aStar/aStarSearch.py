@@ -135,7 +135,7 @@ class aStar():
         curr_node = Node(self.curr_x, self.curr_y, self.goal_x, self.goal_y,0,0)
         # Empty list that will be sorted every time new item is added
         fringe = [] 
-        max_steps = 100000
+        max_steps = 50000
         step_count = 0
         # Set map boundaries
         self.upper_bound = len(self.map[0])-1
@@ -217,4 +217,24 @@ class aStar():
 
         return path
 
+    def convertSpace(self, space, scale):
+        newSpace = []
+        for row in range(len(space)):
+            if row % scale == 0:
+                scaledRow = []
+                for col in range(len(space[0])):
+                    if col % scale == 0:
+                        numZero = 0
+                        for i in range(scale):
+                            #check x direction for zeros
+                            for j in range(scale):
+                                if (row + i) < len(space) and (col+j) < len(space[0]):
+                                    if space[row+i][col + j] == 0:
+                                        numZero = numZero + 1
+                        if numZero > (scale**2)/2:
+                            scaledRow.append(0)
+                        else:
+                            scaledRow.append(1)
+                newSpace.append(scaledRow)
+        self.map = newSpace
 
