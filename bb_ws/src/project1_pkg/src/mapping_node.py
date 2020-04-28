@@ -25,6 +25,9 @@ space = None
 # (scale, origin_x, origin_y, origin_theta)
 reorient_vector = (1, 0, 0, 0)
 
+width = 0
+height = 0
+
 
 def receive_cur_pos(position):
     global cur_pos
@@ -32,10 +35,14 @@ def receive_cur_pos(position):
 
 
 def map_update(ogrid):
-    global space, reorient_vector
+    global space, reorient_vector, height, width
 
     info = ogrid.info
     space = np.reshape(ogrid.data, (info.height, info.width))
+    space = np.transpose(space)
+
+    width = info.width
+    height = info.height
 
     space[space != 0] = 1
 
@@ -50,27 +57,23 @@ def map_update(ogrid):
 
     reorient_vector = (info.resolution, pos[0], pos[1], yaw_rads)
 
+    print("reorient_vector", reorient_vector)
+
 
 def world_point_to_grid(pt):
     pt_x = (pt[0] - reorient_vector[1]) / reorient_vector[0]
     pt_y = (pt[1] - reorient_vector[2]) / reorient_vector[0]
 
-    x = pt_x * math.cos(-reorient_vector[3]) - \
-        pt_y * math.sin(-reorient_vector[3])
-    y = pt_y * math.cos(-reorient_vector[3]) + \
-        pt_x * math.sin(-reorient_vector[3])
-    return (int(x), int(y))
+    return (int(pt_y), int(pt_x))
 
 
 def grid_point_to_world(pt):
-    x = pt[0] * math.cos(reorient_vector[3]) - pt[1] * \
-        math.sin(reorient_vector[3])
-    y = pt[1] * math.cos(reorient_vector[3]) + pt[0] * \
-        math.sin(reorient_vector[3])
+    pt = (height - pt[0], width - pt[1])
 
-    pt_x = x * reorient_vector[0] + reorient_vector[1]
-    pt_y = y * reorient_vector[0] + reorient_vector[2]
-    return (pt_x, pt_y)
+    pt_x = pt[0] * reorient_vector[0] + reorient_vector[1]
+    pt_y = pt[1] * reorient_vector[0] + reorient_vector[2]
+
+    return (pt_y, pt_x)
 
 
 def run_ga():
@@ -81,7 +84,7 @@ def run_ga():
     searchy = GASearch(space, population_size=200)
 
     # path should start at the robot's current position
-    best_path = searchy.search(world_point_to_grid(cur_pos), (400, 300), iters=200)
+    best_path = searchy.search((world_point_to_grid(cur_pos)), (400, 300), iters=200)
 
     # best_path is a list of points forming the path. send to planning_node.
     pathcloud = PointCloud()
