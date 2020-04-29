@@ -1,12 +1,13 @@
 import sys
 import os
-import queue
+import Queue
 import math
 import numpy as np
 import sys
 import math
+import matplotlib.pyplot as plt
 
-# Adopted from Elliott and De Los Angeles AI Project 1 
+# Adopted from Elliott and de los Angeles AI Project 1 
 
 def euclDist(curr_x,curr_y, goal_x, goal_y):
     '''Calcualte the euclidian distance for our admissible and consistent heuristic
@@ -15,7 +16,6 @@ def euclDist(curr_x,curr_y, goal_x, goal_y):
         curr_y: current y val
         goal_x: goal x val
         goal_y: goal y val
-
     Returns:
         int: Euclidian distance value to goal
     '''
@@ -76,17 +76,28 @@ class aStar():
         (xs, ys) = np.nonzero(self.map)
         for i, x in enumerate(xs):
             y = ys[i]
-            if (self.map[x, y] == 2):
+            if (self.map[x][y] == 2):
                 self.curr_y = y
                 self.curr_x = x
-            elif (self.map[x, y] == 3):
+            elif (self.map[x][y] == 3):
                 self.goal_y = y
                 self.goal_x = x
+
+    # Create necessary class variables with start and goal coordinates
+    def __init__(self,map, start, goal):
+        self.map = map
+        self.curr_x = start[1]
+        self.curr_y = start[0]
+        self.goal_x = goal[1]
+        self.goal_y = goal[0]
+        self.left_bound = None
+        self.right_bound = None
+        self.upper_bound = None
+        self.lower_bound = None
 
     def findChildren(self,parent):
         """
         Find the valid childrent of the parent
-
         Parameters:
             node: Parent to find the childrent of
         Returns:
@@ -97,16 +108,16 @@ class aStar():
         gn = parent.gn
         # Find the children of the parent node
         children = []
-        if((x - 1) >= self.left_bound) and (self.map[x-1,y] != 1) and (self.map[x-1,y] != 5):
+        if((x - 1) >= self.left_bound) and (self.map[x-1][y] != 1) and (self.map[x-1][y] != 5):
             children.append(Node(x-1, y, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((x + 1) <= self.right_bound) and (self.map[x+1,y] != 1) and (self.map[x+1,y] != 5):
+        if((x + 1) <= self.right_bound) and (self.map[x+1][y] != 1) and (self.map[x+1][y] != 5):
             children.append(Node(x+1, y, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((y - 1) >= self.lower_bound) and (self.map[x,y-1] != 1) and (self.map[x,y-1] != 5):
+        if((y - 1) >= self.lower_bound) and (self.map[x][y-1] != 1) and (self.map[x][y-1] != 5):
             children.append(Node(x, y-1, self.goal_x, self.goal_y,1,gn, parent))
 
-        if((y + 1) <= self.upper_bound) and (self.map[x,y+1] != 1) and (self.map[x,y+1] != 5):
+        if((y + 1) <= self.upper_bound) and (self.map[x][y+1] != 1) and (self.map[x][y+1] != 5):
             children.append(Node(x, y+1, self.goal_x, self.goal_y,1,gn, parent))
         return children
 
@@ -114,7 +125,6 @@ class aStar():
         """
         Find the grided A* path to the goal defined in the map from the current x and y values
         The x and y values are set default as the start state and can be changed by replanning with a diffrent x and y
-
         Returns:
             list of [direction,x,y]: Represents the direction and xy pairs to get to the goal at each step
         """
@@ -123,12 +133,12 @@ class aStar():
         curr_node = Node(self.curr_x, self.curr_y, self.goal_x, self.goal_y,0,0)
         # Empty list that will be sorted every time new item is added
         fringe = [] 
-        max_steps = 1000
+        max_steps = 50000
         step_count = 0
         # Set map boundaries
-        self.upper_bound = self.map.shape[1] -1
+        self.upper_bound = len(self.map[0])-1
         self.lower_bound = 0
-        self.right_bound = self.map.shape[0] -1
+        self.right_bound = len(self.map) - 1
         self.left_bound = 0
         # Add starting node to fringe
         fringe.append(curr_node)
@@ -171,12 +181,10 @@ class aStar():
     def replan(self, map, curr_x, curr_y):
         """
         Recalculates the A* path based on a new x and y
-
         Parameters:
             map: numpy array with following the droneMapGUI format
             int: current x value
             int: current y value
-
         Returns:
             list of [direction,x,y]: Represents the direction and xy pairs to get to the goal at each step
         """
@@ -186,3 +194,56 @@ class aStar():
         self.curr_y = curr_y
         return self.grid_astar()
 
+    def convert(self, path):
+        """
+        Flip the x and y coordinates from initial A* implementation to line up with visualization axes
+        Switching order from start node to goal node
+        Parameters:
+            path: Initial path from A* with nodes going from goal to start
+        Returns:
+            list of [x,y]: Represents coordinates of nodes on path to get from start to end goal
+        """
+        path.reverse()
+        for i in range(0, len(path)):
+            temp = path[i][0]
+            path[i][0] = path[i][1]
+            path[i][1] = temp
+
+        return path
+
+    def convertSpace(self, space, scale):
+        newSpace = []
+        for row in range(len(space)):
+            if row % scale == 0:
+                scaledRow = []
+                for col in range(len(space[0])):
+                    if col % scale == 0:
+                        numZero = 0
+                        for i in range(scale):
+                            #check x direction for zeros
+                            for j in range(scale):
+                                if (row + i) < len(space) and (col+j) < len(space[0]):
+                                    if space[row+i][col + j] == 0:
+                                        numZero = numZero + 1
+                        if numZero > (scale**2)/2:
+                            scaledRow.append(0)
+                        else:
+                            scaledRow.append(1)
+                newSpace.append(scaledRow)
+        self.map = newSpace
+
+    def display(self, start, path):
+        plt.clf()
+        plt.imshow(self.map, interpolation='none')
+        plt.ion()
+
+        #Plot starting coordinate on figure
+        plt.plot([start[0], path[0][0]],[start[1], path[0][1]], marker='o', color='green')
+
+        for i in range(0, len(path) - 1):
+            pt1 = [path[i][0], path[i + 1][0]]
+            pt2 = [path[i][1], path[i + 1][1]]
+            plt.plot(pt1, pt2, marker='o', color='green')
+        plt.draw()
+        plt.grid(True)
+        plt.show(block=True)
