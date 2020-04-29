@@ -3,6 +3,7 @@
 import rospy
 from math import degrees
 import tf
+from tf2_msgs.msg import TFMessage
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
@@ -11,6 +12,7 @@ from nav_msgs.msg import Odometry
 hdg_pub = None
 pos_pub = None
 
+offset = (0,0)
 
 def odom_callback(data):
     global odom
@@ -36,9 +38,16 @@ def send_current_heading():
 def send_current_position():
     position = odom.pose.pose.position
     cur_pos = Point()
-    cur_pos.x = position.x
-    cur_pos.y = position.y
+    cur_pos.x = position.x + offset[0]
+    cur_pos.y = position.y + offset[1]
     pos_pub.publish(cur_pos)
+
+def tf_callback(msg):
+    global offset
+    for tfm in msg.transforms:
+        if tfm.child_frame_id == 'odom' and tfm.header.frame_id == 'map':
+            offset = (tfm.transform.translation.x, tfm.transform.translation.y)
+            break
 
 
 def main():
@@ -48,6 +57,7 @@ def main():
 
     # subscribe to odom
     rospy.Subscriber("/odom", Odometry, odom_callback)
+    rospy.Subscriber("/tf", TFMessage, tf_callback)
 
     # publish current heading and position
     hdg_pub = rospy.Publisher("/bb/hdg", Float32, queue_size=1)

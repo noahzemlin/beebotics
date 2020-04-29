@@ -12,7 +12,7 @@ from geometry_msgs.msg import Twist, Vector3
 ft_to_m = 0.3048  # 1 ft in meters
 
 # Min feet from obstacle until we avoid (feet)
-min_distance = 2.5
+min_distance = 2.2
 
 # Max difference in headings to consider same heading (degrees)
 angle_diff_threshold = 3
@@ -21,7 +21,7 @@ angle_diff_threshold = 3
 heading_kp = 0.07
 
 # Forward speed (m/s)
-forward_speed = 0.35
+forward_speed = 0.45
 
 # -- Define global variables --
 

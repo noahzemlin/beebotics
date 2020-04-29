@@ -4,6 +4,7 @@ import rospy
 import tf
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 from ga.gasearch import GASearch
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from sensor_msgs.msg import PointCloud
@@ -15,6 +16,9 @@ path_pub = None
 # set True for GA or False for A*
 RUN_GA = True
 
+# Enable debug Viz
+DEBUG = True
+
 # robot's current position
 cur_pos = None
 
@@ -23,10 +27,12 @@ space = None
 
 # Reorientation factor to account for map not aligning with robot initial heading
 # (scale, origin_x, origin_y, origin_theta)
-reorient_vector = (1, 0, 0, 0)
+reorient_vector = (1, 0, 0)
 
 width = 0
 height = 0
+
+searchy = GASearch(population_size=500)
 
 
 def receive_cur_pos(position):
@@ -40,22 +46,15 @@ def map_update(ogrid):
     info = ogrid.info
     space = np.reshape(ogrid.data, (info.height, info.width))
     space = np.transpose(space)
+    space[space != 0] = 1
 
     width = info.width
     height = info.height
 
-    space[space != 0] = 1
+    reorient_vector = (
+        info.resolution, info.origin.position.x, info.origin.position.y)
 
-    pos = (info.origin.position.x, info.origin.position.y)
-    orientation = info.origin.orientation
-    quaternion = (
-        orientation.x,
-        orientation.y,
-        orientation.z,
-        orientation.w)
-    yaw_rads = tf.transformations.euler_from_quaternion(quaternion)[2]
-
-    reorient_vector = (info.resolution, pos[0], pos[1], yaw_rads)
+    searchy.set_world(space)
 
     print("reorient_vector", reorient_vector)
 
@@ -68,40 +67,53 @@ def world_point_to_grid(pt):
 
 
 def grid_point_to_world(pt):
-    pt = (height - pt[0], width - pt[1])
+    pt_x = pt[1] * reorient_vector[0] + reorient_vector[1]
+    pt_y = pt[0] * reorient_vector[0] + reorient_vector[2]
 
-    pt_x = pt[0] * reorient_vector[0] + reorient_vector[1]
-    pt_y = pt[1] * reorient_vector[0] + reorient_vector[2]
+    return (pt_x, pt_y)
 
-    return (pt_y, pt_x)
+
+gen = 0
 
 
 def run_ga():
+    global gen
     if space is None or cur_pos is None:
         return
-    # run the genetic algorithm
-    # TODO put all this in a loop to run repeatedly and keep sending the most updated path
-    searchy = GASearch(space, population_size=200)
 
     # path should start at the robot's current position
-    best_path = searchy.search((world_point_to_grid(cur_pos)), (400, 300), iters=200)
+    best_path = searchy.search((world_point_to_grid(cur_pos)), (300, 400), iters=500, init_pop=(gen == 0))
+    gen += 1
 
-    # best_path is a list of points forming the path. send to planning_node.
-    pathcloud = PointCloud()
-    pathcloud.header.stamp = rospy.Time.now()
-    pathcloud.points = []
-    for path_pt in best_path.pts:
-        point = Point32()
-        point.x, point.y = grid_point_to_world(path_pt)
-        point.z = 0.1 # to put above ground in RViz
-        pathcloud.points.append(point)
-    path_pub.publish(pathcloud)
+    if DEBUG:
+        plt.clf()
+        plt.ion()
+        plt.imshow(searchy.world, interpolation='none')
+        for i in range(0, len(best_path.pts) - 1):
+            pt1 = [best_path.pts[i][0], best_path.pts[i + 1][0]]
+            pt2 = [best_path.pts[i][1], best_path.pts[i + 1][1]]
+            plt.plot(pt1, pt2, marker='o', color='green')
+        plt.title("gen: " + str(gen * 500))
+        plt.draw()
+        plt.show()
+        plt.pause(0.00001)
+
+    # ff our path is complete
+    if best_path.score < 1:
+        # best_path is a list of points forming the path. send to planning_node.
+        pathcloud = PointCloud()
+        pathcloud.header.stamp = rospy.Time.now()
+        pathcloud.points = []
+        for path_pt in best_path.pts:
+            point = Point32()
+            point.x, point.y = grid_point_to_world(path_pt)
+            pathcloud.points.append(point)
+        path_pub.publish(pathcloud)
 
 
 def run_astar():
     # run A* to create the path
     pass
-
 
 def main():
     global path_pub
@@ -109,7 +121,8 @@ def main():
     rospy.init_node('mapping_node', anonymous=True)
 
     # subscribe to the robot's current position (use as start of path)
-    map_sub = rospy.Subscriber("/map", OccupancyGrid, map_update, queue_size=1)
+    # use "/move_base/global_costmap/costmap" if slam works goodly
+    map_sub = rospy.Subscriber("/move_base/global_costmap/costmap", OccupancyGrid, map_update, queue_size=1)
 
     # publish command to follow path
     path_pub = rospy.Publisher("/bb/path", PointCloud, queue_size=1)
@@ -117,7 +130,7 @@ def main():
     # subscribe to the robot's current position (use as start of path)
     pos_sub = rospy.Subscriber("/bb/pos", Point, receive_cur_pos, queue_size=1)
 
-    rate = rospy.Rate(1)  # 1hz
+    rate = rospy.Rate(1)  # 1Hz, doesn't really matter since it'll take longer.
     while not rospy.is_shutdown():
         # check whether we are using A* or GA to generate the path
         if RUN_GA:

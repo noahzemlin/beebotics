@@ -17,6 +17,8 @@ pp = PurePursuit()
 pos = None
 current_heading = None
 
+received_path = False
+
 
 def get_angle_diff(angle1, angle2):
     # from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
@@ -36,7 +38,8 @@ def receive_position(position):
 
 def receive_path(point_cloud):
     # set path for pure pursuit
-    global pp
+    global pp, received_path
+    received_path = True
     pts = []
     for pt in point_cloud.points:
         pts.append((pt.x, pt.y))
@@ -48,7 +51,7 @@ def receive_path(point_cloud):
 def generate_command(timer_event):
     global current_heading, target_heading
 
-    if pos is None or current_heading is None or pp is None:
+    if pos is None or current_heading is None or pp is None or not received_path:
         # wait until sensors/localization bring in data
         # wait until path is generated and received
         return
@@ -68,12 +71,15 @@ def generate_command(timer_event):
 
     # make sure we actually found the path
     if lookahead is not None:
-        heading_to_la = -degrees(atan2(lookahead[1] - cur_pos[1], lookahead[0] - cur_pos[0]))
+        heading_to_la = degrees(atan2(cur_pos[1] - lookahead[1], cur_pos[0] - lookahead[0]))
         if heading_to_la <= 0:
             heading_to_la += 360
 
         delta = heading_to_la - current_heading
         delta = (delta + 180) % 360 - 180
+
+        print("lookahead", lookahead)
+        print("curpos", cur_pos)
 
         # set command velocity (drive power)
         # TODO this probably needs to be extremely adjusted
