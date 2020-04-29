@@ -116,15 +116,11 @@ def run_astar():
     if space is None or cur_pos is None:
         return
 
-    # Coordinates for scale = 5
-    # scale = 5 
-    # start = [60, 55] 
-    # goal = [60,95]
-
-    # scaled down by 100 scale factor = 10
-    scale = 10
-    start = [30, 25] 
-    goal = [30,47]
+    # Scaling
+    scale = 5
+    pos = world_point_to_grid(cur_pos)
+    start = [pos[0]//scale, pos[1]//scale] 
+    goal = [300//scale, 400//scale]
 
     # run A* to create the path
     search = aStar(space, start, goal)
@@ -140,12 +136,12 @@ def run_astar():
 
     # include start point
     point = Point32()
-    point.x, point.y = grid_point_to_world(start, 100)
+    point.x, point.y = grid_point_to_world(start, scale)
     pathcloud.points.append(point)
 
     for path_pt in best_path:
         point = Point32()
-        point.x, point.y = grid_point_to_world(path_pt, 100)
+        point.x, point.y = grid_point_to_world(path_pt, scale)
         pathcloud.points.append(point)
     path_pub.publish(pathcloud)
 
@@ -156,7 +152,7 @@ def main():
 
     # subscribe to the robot's current position (use as start of path)
     # use "/move_base/global_costmap/costmap" if slam works goodly
-    map_sub = rospy.Subscriber("/move_base/global_costmap/costmap", OccupancyGrid, map_update, queue_size=1)
+    map_sub = rospy.Subscriber("/map", OccupancyGrid, map_update, queue_size=1)
 
     # publish command to follow path
     path_pub = rospy.Publisher("/bb/path", PointCloud, queue_size=1)

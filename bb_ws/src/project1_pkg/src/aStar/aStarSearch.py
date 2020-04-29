@@ -48,7 +48,7 @@ class Node:
         self.fn = -1
         self.x = curr_x
         self.y = curr_y
-        self.name = str(curr_x)+','+str(curr_y)
+        self.name = curr_x + curr_y * 10000
 
         if (curr_x == goal_x) and (curr_y == goal_y):
             self.contains_goal = True
