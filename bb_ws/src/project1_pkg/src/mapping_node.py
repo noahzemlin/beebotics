@@ -5,6 +5,7 @@ import tf
 import math
 import numpy as np
 from ga.gasearch import GASearch
+from aStar.aStarSearch import aStar
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from sensor_msgs.msg import PointCloud
 from geometry_msgs.msg import Point32, Point
@@ -60,9 +61,9 @@ def map_update(ogrid):
     print("reorient_vector", reorient_vector)
 
 
-def world_point_to_grid(pt):
-    pt_x = (pt[0] - reorient_vector[1]) / reorient_vector[0]
-    pt_y = (pt[1] - reorient_vector[2]) / reorient_vector[0]
+def world_point_to_grid(pt, scale = 1):
+    pt_x = ((pt[0] - reorient_vector[1]) / reorient_vector[0])*scale
+    pt_y = ((pt[1] - reorient_vector[2]) / reorient_vector[0])*scale
 
     return (int(pt_y), int(pt_x))
 
@@ -99,9 +100,43 @@ def run_ga():
 
 
 def run_astar():
-    # run A* to create the path
-    pass
+    if space is None or cur_pos is None:
+        return
 
+    # Coordinates for scale = 5
+    # scale = 5 
+    # start = [60, 55] 
+    # goal = [60,95]
+
+    # scaled down by 100 scale factor = 10
+    scale = 10
+    start = [30, 25] 
+    goal = [30,47]
+
+    # run A* to create the path
+    search = aStar(space, start, goal)
+    search.convertSpace(space, scale)
+    path = search.grid_astar()
+    best_path = search.convert(path)
+    search.display(start, best_path)
+
+    # best_path is a list of points forming the path. send to planning_node.
+    pathcloud = PointCloud()
+    pathcloud.header.stamp = rospy.Time.now()
+    pathcloud.points = []
+
+    # include start point
+    point = Point32()
+    point.x, point.y = grid_point_to_world(start, 100)
+    point.z = 0.1 # to put above ground in RViz
+    pathcloud.points.append(point)
+
+    for path_pt in best_path:
+        point = Point32()
+        point.x, point.y = grid_point_to_world(path_pt, 100)
+        point.z = 0.1 # to put above ground in RViz
+        pathcloud.points.append(point)
+    path_pub.publish(pathcloud)
 
 def main():
     global path_pub

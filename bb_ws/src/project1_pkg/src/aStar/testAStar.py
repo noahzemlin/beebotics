@@ -43,9 +43,8 @@ goal = [30,47]
 
 search = aStar(space, start, goal)
 
-scale = 5 
+scale = 10 
 search.convertSpace(space, scale)
-space = search.map
 
 path = search.grid_astar()
 print(path)
@@ -73,17 +72,4 @@ print("distance:", len(path))
 # print("NEW PATH:", newPath)
 # path = newPath
 
-plt.clf()
-plt.imshow(space, interpolation='none')
-plt.ion()
-
-#Plot starting coordinate on figure
-plt.plot([start[0], path[0][0]],[start[1], path[0][1]], marker='o', color='green')
-
-for i in range(0, len(path) - 1):
-    pt1 = [path[i][0], path[i + 1][0]]
-    pt2 = [path[i][1], path[i + 1][1]]
-    plt.plot(pt1, pt2, marker='o', color='green')
-plt.draw()
-plt.grid(True)
-plt.show(block=True)
+search.display(start, path)

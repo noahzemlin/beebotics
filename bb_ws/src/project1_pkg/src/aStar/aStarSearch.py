@@ -5,6 +5,7 @@ import math
 import numpy as np
 import sys
 import math
+import matplotlib.pyplot as plt
 
 # Adopted from Elliott and de los Angeles AI Project 1 
 
@@ -230,3 +231,19 @@ class aStar():
                             scaledRow.append(1)
                 newSpace.append(scaledRow)
         self.map = newSpace
+
+    def display(self, start, path):
+        plt.clf()
+        plt.imshow(self.map, interpolation='none')
+        plt.ion()
+
+        #Plot starting coordinate on figure
+        plt.plot([start[0], path[0][0]],[start[1], path[0][1]], marker='o', color='green')
+
+        for i in range(0, len(path) - 1):
+            pt1 = [path[i][0], path[i + 1][0]]
+            pt2 = [path[i][1], path[i + 1][1]]
+            plt.plot(pt1, pt2, marker='o', color='green')
+        plt.draw()
+        plt.grid(True)
+        plt.show(block=True)
