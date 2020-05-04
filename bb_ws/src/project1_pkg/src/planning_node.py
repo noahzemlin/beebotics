@@ -19,9 +19,8 @@ current_heading = None
 
 received_path = False
 
-
+# from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
 def get_angle_diff(angle1, angle2):
-    # from github.com/SoonerRobotics/igvc_software_2020/blob/master/igvc_ws/src/igvc_nav/src/igvc_nav_node.py
     delta = angle1 - angle2
     delta = (delta + 180) % 360 - 180
     return delta
@@ -30,6 +29,7 @@ def get_angle_diff(angle1, angle2):
 def receive_heading(hdg):
     global current_heading
     current_heading = hdg.data
+
 
 def receive_position(position):
     global pos
@@ -81,8 +81,9 @@ def generate_command(timer_event):
         print("lookahead", lookahead)
         print("curpos", cur_pos)
 
-        # set command velocity (drive power)
-        # TODO this probably needs to be extremely adjusted
+        # set command velocity (drive power).
+        # this could be adjusted for better functionality,
+        # but we are never moving and turning at the same time so it's fine
         cmd_speed = 0.5 * (1 - abs(delta / 180))**5
 
         path_cmd = Twist()

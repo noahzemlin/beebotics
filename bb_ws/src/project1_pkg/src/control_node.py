@@ -31,15 +31,13 @@ key_cmd = Twist()
 bumped = False
 
 # The most recent nav command
-mav_cmd = Twist()
+nav_cmd = None
 
 # Last odom update
 odom = Odometry()
 
 # Control speed forward
 control_speed = 0
-
-nav_cmd = None
 
 
 def odom_callback(data):

@@ -20,6 +20,7 @@ def odom_callback(data):
     send_current_heading()
     send_current_position()
 
+
 def send_current_heading():
     # returns degrees (0 "north" to 360, CW)
     orientation = odom.pose.pose.orientation
@@ -41,6 +42,7 @@ def send_current_position():
     cur_pos.x = position.x + offset[0]
     cur_pos.y = position.y + offset[1]
     pos_pub.publish(cur_pos)
+
 
 def tf_callback(msg):
     global offset
