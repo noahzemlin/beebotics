@@ -23,7 +23,7 @@
   <!-- Name of the map to use (without path nor extension) and initial position -->
   <arg name="world_file"  default="$(find project1_pkg)/maps/stage/devon.world"/>
   <arg name="map_file"  default="$(find project1_pkg)/maps/complete_devon.yaml"/> 
-  <arg name="initial_pose_x" default="2.0"/>
+  <arg name="initial_pose_x" default="1.0"/>
   <arg name="initial_pose_y" default="2.0"/>
   <arg name="initial_pose_a" default="0.0"/>
 

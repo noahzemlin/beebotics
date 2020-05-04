@@ -152,7 +152,7 @@ def main():
 
     # subscribe to the robot's current position (use as start of path)
     # use "/move_base/global_costmap/costmap" if slam works goodly
-    map_sub = rospy.Subscriber("/map", OccupancyGrid, map_update, queue_size=1)
+    map_sub = rospy.Subscriber("/move_base/global_costmap/costmap", OccupancyGrid, map_update, queue_size=1)
 
     # publish command to follow path
     path_pub = rospy.Publisher("/bb/path", PointCloud, queue_size=1)
