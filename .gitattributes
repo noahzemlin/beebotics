@@ -1,0 +1,4 @@
+*.p linguist-documentation
+*.inc linguist-documentation
+*.txt linguist-documentation
+roomModels/* linguist-documentation
